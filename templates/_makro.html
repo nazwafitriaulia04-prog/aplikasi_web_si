@@ -1,0 +1,32 @@
+{# Makro Jinja Reusable untuk Rendering Formulir WTForms #}
+
+{% macro render_field(field) %}
+<div class="mb-3">
+    {# Render Label Input jika bukan field tersembunyi #}
+    {% if field.type not in ['HiddenField', 'CSRFTokenField', 'SubmitField'] %}
+        {{ field.label(class="form-label fw-semibold") }}
+    {% endif %}
+
+    {# Tentukan CSS class berdasarkan tipe field dan status validasi #}
+    {% set input_class = "form-select" if field.type == "SelectField" else "form-control" %}
+    {% if field.errors %}
+        {% set input_class = input_class + " is-invalid" %}
+    {% endif %}
+
+    {# Render Tag Input dengan atribut tambahan (kwargs) #}
+    {% if field.type not in ['HiddenField', 'CSRFTokenField', 'SubmitField'] %}
+        {{ field(class=input_class, **kwargs) }}
+    {% else %}
+        {{ field(**kwargs) }}
+    {% endif %}
+
+    {# Render Pesan Error dari Validasi Form #}
+    {% if field.errors %}
+        {% for error in field.errors %}
+            <div class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endmacro %}

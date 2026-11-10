@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block judul %}404 - Halaman Tidak Ditemukan{% endblock %}
+
+{% block isi %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 text-center">
+        <div class="display-1 fw-bold text-danger mb-2">404</div>
+        <h3 class="fw-bold mb-3">Halaman / Data Tidak Ditemukan</h3>
+        <!-- Penggunaan filter bawaan Jinja: default tanpa menggunakan safe agar aman dari XSS -->
+        <div class="alert alert-warning-subtle text-dark border py-3 px-4 mb-4 rounded-3 d-inline-block text-start">
+            <i class="bi bi-info-circle text-warning me-2"></i>
+            <span>{{ pesan | default("Data mahasiswa atau rute yang Anda tuju tidak terdaftar di sistem SI Peringatan Dini.", true) }}</span>
+        </div>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="bi bi-house-door me-1"></i> Kembali ke Dashboard
+            </a>
+            <a href="{{ url_for('daftar_mahasiswa') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-people me-1"></i> Lihat Data Mahasiswa
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

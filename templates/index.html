@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block judul %}Dashboard - SI Peringatan Dini{% endblock %}
+
+{% block isi %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-speedometer2 text-primary me-2"></i>Dashboard Peringatan Dini
+        </h2>
+        <p class="text-muted">Pemantauan otomatis mahasiswa dengan indikasi kendala akademik dan presensi.</p>
+    </div>
+</div>
+
+<!-- Kartu Ringkasan Statistik -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card bg-white p-3 border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Total Mahasiswa</div>
+                    <div class="fs-2 fw-bold text-dark">{{ total_mahasiswa }}</div>
+                </div>
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                    <i class="bi bi-people-fill fs-3"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Data terdaftar di basis data SQLite
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card stat-card bg-white p-3 border-start border-danger border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Mahasiswa Berisiko</div>
+                    <!-- Penggunaan filter bawaan Jinja: length -->
+                    <div class="fs-2 fw-bold text-danger">{{ mahasiswa_berisiko | length }}</div>
+                </div>
+                <div class="bg-danger-subtle text-danger p-3 rounded-circle">
+                    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Kriteria: IPK &lt; 2.75 atau Kehadiran &lt; 75%
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card stat-card bg-white p-3 border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Kondisi Akademik Aman</div>
+                    <div class="fs-2 fw-bold text-success">{{ total_mahasiswa - (mahasiswa_berisiko | length) }}</div>
+                </div>
+                <div class="bg-success-subtle text-success p-3 rounded-circle">
+                    <i class="bi bi-shield-check fs-3"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Memenuhi kualifikasi kelulusan reguler
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daftar Mahasiswa Berisiko (Tabel Peringatan Dini) -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-semibold text-danger">
+            <i class="bi bi-bell-fill me-2"></i>Daftar Peringatan Dini Aktif
+        </h5>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('tambah_mahasiswa') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-person-plus me-1"></i> Tambah Mahasiswa
+            </a>
+            <a href="{{ url_for('daftar_mahasiswa') }}" class="btn btn-sm btn-outline-primary">
+                Lihat Semua &rarr;
+            </a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>NIM</th>
+                    <th>Nama Mahasiswa</th>
+                    <th>Program Studi</th>
+                    <th>IPK (Predikat)</th>
+                    <th>Kehadiran</th>
+                    <th>Status Risiko</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {# Penggunaan perulangan for dengan kondisi else jika data kosong #}
+                {% for m in mahasiswa_berisiko %}
+                {% set ipk_rendah = (m.ipk < 2.75) %}
+                {% set presensi_rendah = (m.kehadiran < 75 if m.kehadiran > 1 else m.kehadiran < 0.75) %}
+                <tr>
+                    <td class="fw-bold font-monospace">{{ m.nim }}</td>
+                    <!-- Penggunaan filter bawaan Jinja: title -->
+                    <td class="fw-semibold">{{ m.nama | title }}</td>
+                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ m.prodi }}</span></td>
+                    <td>
+                        <span class="fw-bold {% if ipk_rendah %}text-danger{% endif %}">{{ "%.2f"|format(m.ipk) }}</span>
+                        <br>
+                        <!-- Penggunaan custom filter: predikat -->
+                        <small class="text-muted">{{ m.ipk | predikat }}</small>
+                    </td>
+                    <td>
+                        <!-- Penggunaan custom filter: persen -->
+                        <span class="fw-bold {% if presensi_rendah %}text-danger{% endif %}">
+                            {{ m.kehadiran | persen }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if ipk_rendah and presensi_rendah %}
+                            <span class="badge bg-danger">IPK Rendah &amp; Presensi Kurang</span>
+                        {% elif ipk_rendah %}
+                            <span class="badge bg-warning text-dark">IPK di Bawah Standar</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Presensi di Bawah 75%</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{{ url_for('detail_mahasiswa', nim=m.nim) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-eye"></i> Detail
+                        </a>
+                        <a href="{{ url_for('api_mahasiswa', nim=m.nim) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Response JSON API">
+                            <i class="bi bi-code-slash"></i> JSON
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
+                        <span>Alhamdulillah, tidak ada mahasiswa yang membutuhkan peringatan dini saat ini.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

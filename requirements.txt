@@ -1,0 +1,24 @@
+# ==============================================================================
+# Dependensi Sistem Informasi Peringatan Dini Akademik (SI Peringatan Dini)
+# Kompatibilitas: Python 3.11+
+# ==============================================================================
+
+# Core Web Framework & Engine
+Flask>=3.0.0,<3.2.0
+Jinja2>=3.1.2
+Werkzeug>=3.0.0
+click>=8.1.0
+blinker>=1.7.0
+itsdangerous>=2.1.0
+
+# Basis Data & ORM (SQLAlchemy 2.x)
+Flask-SQLAlchemy>=3.1.0,<3.2.0
+SQLAlchemy>=2.0.0,<2.1.0
+
+# Formulir Sisi Server, Validasi, & Proteksi CSRF
+Flask-WTF>=1.2.0,<1.3.0
+WTForms>=3.1.0,<3.3.0
+email-validator>=2.1.0
+
+# Manajemen Variabel Lingkungan (.env)
+python-dotenv>=1.0.0

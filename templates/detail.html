@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% from "_makro.html" import render_field %}
+
+{% block judul %}Detail Mahasiswa - {{ mahasiswa.nama | title }}{% endblock %}
+
+{% block isi %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Tombol Navigasi Kembali & Form Tombol Hapus Mahasiswa -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{{ url_for('daftar_mahasiswa') }}" class="btn btn-sm btn-link text-decoration-none ps-0">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Mahasiswa
+            </a>
+
+            <!-- Form POST untuk Hapus Mahasiswa dengan Perlindungan CSRF -->
+            <form action="{{ url_for('hapus_mahasiswa', nim=mahasiswa.nim) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus mahasiswa {{ mahasiswa.nama }} ({{ mahasiswa.nim }}) beserta seluruh riwayat catatannya? Tindakan ini tidak dapat dibatalkan.');">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash3-fill me-1"></i> Hapus Mahasiswa
+                </button>
+            </form>
+        </div>
+
+        <!-- Banner Status Peringatan Dini -->
+        {% if berisiko %}
+        <div class="alert alert-danger d-flex align-items-center mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-danger"></i>
+            <div>
+                <h5 class="alert-heading mb-1 fw-bold">Peringatan Dini Akademik Aktif!</h5>
+                <p class="mb-0 small">
+                    Mahasiswa ini masuk ke dalam kategori pengawasan akademik karena memiliki
+                    {% if mahasiswa.ipk < 2.75 and mahasiswa.kehadiran < 75 %}
+                        IPK di bawah standar ({{ "%.2f"|format(mahasiswa.ipk) }}) dan presensi rendah ({{ mahasiswa.kehadiran | persen }}).
+                    {% elif mahasiswa.ipk < 2.75 %}
+                        IPK di bawah standar kelulusan minimum ({{ "%.2f"|format(mahasiswa.ipk) }}).
+                    {% else %}
+                        presensi perkuliahan di bawah batas 75% ({{ mahasiswa.kehadiran | persen }}).
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-success d-flex align-items-center mb-4 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill fs-3 me-3 text-success"></i>
+            <div>
+                <h5 class="alert-heading mb-1 fw-bold">Kondisi Akademik Aman &amp; Terpenuhi</h5>
+                <p class="mb-0 small">Mahasiswa memenuhi seluruh standar minimal pencapaian nilai dan presensi.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Kartu Detail Profil Mahasiswa -->
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold">{{ mahasiswa.nama | title }}</h4>
+                        <span class="badge bg-light text-dark font-monospace mt-1">NIM: {{ mahasiswa.nim }}</span>
+                        {% if mahasiswa.email %}
+                            <span class="badge bg-primary-subtle text-primary-emphasis ms-1">
+                                <i class="bi bi-envelope me-1"></i>{{ mahasiswa.email }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-white text-primary fs-6 px-3 py-2">
+                        Program Studi: {{ mahasiswa.prodi }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- Kartu Indikator IPK -->
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 h-100 border">
+                            <span class="text-muted small text-uppercase fw-semibold d-block mb-1">
+                                <i class="bi bi-award me-1"></i>Indeks Prestasi Kumulatif (IPK)
+                            </span>
+                            <div class="display-6 fw-bold {% if mahasiswa.ipk < 2.75 %}text-danger{% else %}text-primary{% endif %}">
+                                {{ "%.2f"|format(mahasiswa.ipk) }}
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-dark-subtle text-dark border">
+                                    Predikat: {{ mahasiswa.ipk | predikat }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Indikator Presensi -->
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 h-100 border">
+                            <span class="text-muted small text-uppercase fw-semibold d-block mb-1">
+                                <i class="bi bi-calendar-check me-1"></i>Tingkat Kehadiran
+                            </span>
+                            <div class="display-6 fw-bold {% if mahasiswa.kehadiran < 75 %}text-danger{% else %}text-success{% endif %}">
+                                {{ mahasiswa.kehadiran | persen }}
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress" style="height: 8px;">
+                                    {% set pct = mahasiswa.kehadiran if mahasiswa.kehadiran > 1.0 else (mahasiswa.kehadiran * 100) %}
+                                    <div class="progress-bar {% if mahasiswa.kehadiran < 75 %}bg-danger{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ pct }}%;"
+                                         aria-valuenow="{{ pct }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">Batas aman kehadiran perkuliahan: min. 75%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian Endpoint REST API -->
+                <div class="bg-body-secondary p-3 rounded-2 mt-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <span class="fw-semibold small text-uppercase text-muted">Endpoint REST API:</span>
+                            <code class="ms-1">/api/mahasiswa/{{ mahasiswa.nim }}</code>
+                        </div>
+                        <a href="{{ url_for('api_mahasiswa', nim=mahasiswa.nim) }}" target="_blank" class="btn btn-sm btn-outline-dark">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Response JSON
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Riwayat Catatan Bimbingan & Formulir Tambah Catatan (CatatanForm) -->
+        <div class="row g-4">
+            <!-- Kolom Kiri: Riwayat Catatan -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark">
+                            <i class="bi bi-journal-text text-primary me-2"></i>Riwayat Catatan Bimbingan
+                        </h5>
+                        <span class="badge bg-primary rounded-pill">{{ mahasiswa.catatan | length }} Catatan</span>
+                    </div>
+                    <div class="card-body p-3">
+                        {% for c in mahasiswa.catatan %}
+                        <div class="border rounded-3 p-3 mb-3 bg-white shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {% if c.jenis == 'Akademik' %}bg-danger{% elif c.jenis == 'Keuangan' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                                    {{ c.jenis }}
+                                </span>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>{{ c.dibuat.strftime('%d-%m-%Y %H:%M') if c.dibuat else '-' }}
+                                </small>
+                            </div>
+                            <p class="mb-0 text-secondary" style="white-space: pre-line;">{{ c.isi }}</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-chat-square-dots fs-2 text-secondary d-block mb-2"></i>
+                            <p class="mb-0 small">Belum ada catatan bimbingan atau konseling untuk mahasiswa ini.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Form Tambah Catatan Menggunakan CatatanForm & render_field Makro -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold text-dark">
+                            <i class="bi bi-pencil-square text-success me-2"></i>Tambah Catatan Baru
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <!-- Tag <form> dengan pemanggilan form.hidden_tag() untuk CSRF Protection -->
+                        <form action="{{ url_for('detail_mahasiswa', nim=mahasiswa.nim) }}" method="POST" novalidate>
+                            {{ form.hidden_tag() }}
+
+                            <!-- Penggunaan makro render_field dari _makro.html -->
+                            {{ render_field(form.jenis) }}
+                            {{ render_field(form.isi, rows=4, placeholder="Tuliskan rincian hasil bimbingan, konseling, atau peringatan akademik...") }}
+
+                            <button type="submit" class="btn btn-success w-100 fw-semibold">
+                                <i class="bi bi-plus-circle me-1"></i> Simpan Catatan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
